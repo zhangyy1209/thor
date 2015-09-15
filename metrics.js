@@ -147,8 +147,15 @@ Metrics.prototype.summary = function summary() {
   // Up next is outputting the series.
   var handshaking = this.handshaking
     , latency = this.latency
-    , hrange = handshaking.range()
-    , lrange = latency.range();
+    , hrange = handshaking.range();
+
+  var latencyNew = new Stats();
+  var latencyMin = latency.min;
+  for(var i=0; i<latency.data.length; i++) {
+    latencyNew.push(latency.data[i] - latencyMin);
+  }
+  
+  var lrange = latencyNew.range();
 
   //
   // Generate the width of the columns, based on the length of the longest
@@ -184,9 +191,9 @@ Metrics.prototype.summary = function summary() {
       [
         'Latency',
         lrange[0].toFixed(),
-        latency.amean().toFixed(),
-        latency.stddev().toFixed(),
-        latency.median().toFixed(),
+        latencyNew.amean().toFixed(),
+        latencyNew.stddev().toFixed(),
+        latencyNew.median().toFixed(),
         lrange[1].toFixed()
       ]
     ]
@@ -224,15 +231,15 @@ Metrics.prototype.summary = function summary() {
       ],
       [
         'Latency',
-        latency.percentile(50).toFixed(),
-        latency.percentile(66).toFixed(),
-        latency.percentile(75).toFixed(),
-        latency.percentile(80).toFixed(),
-        latency.percentile(90).toFixed(),
-        latency.percentile(95).toFixed(),
-        latency.percentile(98).toFixed(),
-        latency.percentile(99).toFixed(),
-        latency.percentile(100).toFixed()
+        latencyNew.percentile(50).toFixed(),
+        latencyNew.percentile(66).toFixed(),
+        latencyNew.percentile(75).toFixed(),
+        latencyNew.percentile(80).toFixed(),
+        latencyNew.percentile(90).toFixed(),
+        latencyNew.percentile(95).toFixed(),
+        latencyNew.percentile(98).toFixed(),
+        latencyNew.percentile(99).toFixed(),
+        latencyNew.percentile(100).toFixed()
       ]
     ]
   });
@@ -252,6 +259,7 @@ Metrics.prototype.summary = function summary() {
   }
 
   return this;
+  // return results;
 };
 
 //

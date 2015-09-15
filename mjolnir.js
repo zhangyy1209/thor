@@ -75,11 +75,11 @@ process.on('message', function message(task) {
       process.send({
         type: 'connection'
       });
-      socket.last = Date.now();
       msgId++;
     } else if (data.indexOf('"channel":"/chat') > -1) {
+      // console.log(Date.now() - time_first);
       process.send({
-        type: 'message', latency: Date.now() - socket.last, concurrent: concurrent,
+        type: 'message', latency: Date.now(), concurrent: concurrent,
         id: task.id
       });
     } else if (data === '[]') {

@@ -46,6 +46,7 @@ var cluster = require('cluster')
   , connections = 0
   , received = 0
   , connected = 0
+  , closed = 0
   , robin = [];
 
 cluster.setupMaster({
@@ -76,11 +77,13 @@ Object.keys(cluster.workers).forEach(function each(id) {
 
         // Output the connection progress
         ++connections;
+
         break;
 
       case 'close':
         delete ids[data.id];
         connected--;
+        closed++;
 
         metrics.close(data);
         break;
@@ -88,6 +91,7 @@ Object.keys(cluster.workers).forEach(function each(id) {
       case 'error':
         delete ids[data.id];
         connected--;
+        closed++;
 
         metrics.error(data);
         break;
@@ -97,9 +101,15 @@ Object.keys(cluster.workers).forEach(function each(id) {
         break;
 
       case 'message':
-        if(received === connected) {
+        if(received + closed === connections) {
+        // if(received === connected) {
+          // output to file
+          metrics.established().stop().summary();
+          metrics = new Metrics(cli.amount * cli.args.length);
+
           received = 0;
         }
+
         received++;
         metrics.message(data);
     }
@@ -135,7 +145,8 @@ function live() {
       'Created '.white + connections.toString().green,
       // 'Active '.white + active.toString().green
       'Connected '.white + connected.toString().green,
-      'Received '.white + received.toString().green
+      'Received '.white + received.toString().green,
+      'Closed '.white + closed.toString().green
     ].join(', '));
   }, interval);
 }
