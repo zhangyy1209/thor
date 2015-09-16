@@ -36,6 +36,13 @@ if (!cli.args.length) return [
   console.error(line);
 });
 
+var faye = require('faye');
+var client = new faye.Client('http://push.appfolio.us/faye');
+
+var publish = function(message) {
+  client.publish('/chat', {text: message});
+}
+
 //
 // By Odin's beard, unleash thunder!
 //
@@ -98,16 +105,21 @@ Object.keys(cluster.workers).forEach(function each(id) {
 
       case 'connection':
         connected++;
+        if(connected === cli.amount) {
+          publish("test");
+        }
+
         break;
 
       case 'message':
-        if(received + closed === connections) {
-        // if(received === connected) {
-          // output to file
+        if(received + closed === connections-1) {
+          received++;
+          metrics.message(data);
           metrics.established().stop().summary();
-          metrics = new Metrics(cli.amount * cli.args.length);
-
+          metrics = new Metrics();
           received = 0;
+          publish("test");
+
         }
 
         received++;
@@ -199,7 +211,7 @@ live.stop = function stop() {
 //
 // Metrics collection.
 //
-var metrics = new Metrics(cli.amount * cli.args.length);
+var metrics = new Metrics();
 
 // Iterate over all the urls so we can target multiple locations at once, which
 // is helpfull if you are testing multiple loadbalancer endpoints for example.

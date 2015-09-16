@@ -3,7 +3,8 @@
 var Stats = require('fast-stats').Stats
   , colors = require('colors')
   , sugar = require('sugar')
-  , table = require('tab');
+  , table = require('tab')
+  , fs = require('fs');
 
 /**
  * Metrics collection and generation.
@@ -11,12 +12,15 @@ var Stats = require('fast-stats').Stats
  * @constructor
  * @param {Number} requests The total amount of requests scheduled to be send
  */
-function Metrics(requests) {
-  this.requests = requests;             // The total amount of requests send
+function Metrics() {
+  // this.requests = requests;             // The total amount of requests send
 
   this.connections = 0;                 // Connections established
   this.disconnects = 0;                 // Closed connections
   this.failures = 0;                    // Connections that received an error
+  this.received = 0;
+
+  this.data = "";
 
   this.errors = Object.create(null);    // Collection of different errors
   this.timing = Object.create(null);    // Different timings
@@ -91,6 +95,8 @@ Metrics.prototype.error = function error(data) {
  */
 Metrics.prototype.message = function message(data) {
   this.latency.push(data.latency);
+  this.received++;
+  this.data = data.message;
 
   return this;
 };
@@ -258,8 +264,22 @@ Metrics.prototype.summary = function summary() {
     }, this);
   }
 
+  var msg = ['min', 'mean', 'stddev', 'median', 'max'].join("\t") + "\n";
+
+  msg += ['Latency',
+        lrange[0].toFixed(),
+        latencyNew.amean().toFixed(),
+        latencyNew.stddev().toFixed(),
+        latencyNew.median().toFixed(),
+        lrange[1].toFixed()].join("\t") + "\n";
+
+  msg += ['Received', this.received, 'Message: ' + this.data].join("\t") + "\n\n";
+
+  fs.appendFile('out.txt', msg, function(err) {
+    console.log(err);
+  });
+
   return this;
-  // return results;
 };
 
 //

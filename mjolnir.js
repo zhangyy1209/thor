@@ -48,6 +48,7 @@ process.on('message', function message(task) {
   });
 
   socket.on('open', function open() {
+    console.log("opned...");
     process.send({ type: 'open', duration: Date.now() - now, id: task.id, concurrent: concurrent });
     socket.send('{"channel":"/meta/handshake","version":"1.0","supportedConnectionTypes":["websocket","long-polling"],"id":"1"}'.toString('utf-8'));
     // write(socket, task, task.id);
@@ -60,6 +61,8 @@ process.on('message', function message(task) {
       , msgId = 0
       , msg = ''
       , channel = '';
+
+    // console.dir(data);
 
     if (data.indexOf('"/meta/handshake","successful":true') > -1) {
       data = JSON.parse(data);
@@ -77,10 +80,11 @@ process.on('message', function message(task) {
       });
       msgId++;
     } else if (data.indexOf('"channel":"/chat') > -1) {
+      data = JSON.parse(data);
       // console.log(Date.now() - time_first);
       process.send({
         type: 'message', latency: Date.now(), concurrent: concurrent,
-        id: task.id
+        id: task.id, message: data[0].data.text
       });
     } else if (data === '[]') {
     } else if (data.indexOf('"advice":{"reconnect":"retry"') > -1) {
@@ -106,8 +110,7 @@ process.on('message', function message(task) {
   });
 
   socket.on('error', function error(err) {
-    console.log("error");
-    console.log(err.message);
+    console.log("error: " + err.message);
     process.send({ type: 'error', message: err.message, id: task.id, concurrent: --concurrent });
 
     socket.close();
