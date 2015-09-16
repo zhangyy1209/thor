@@ -61,6 +61,8 @@ process.on('message', function message(task) {
       , msg = ''
       , channel = '';
 
+    // console.dir(data);
+
     if (data.indexOf('"/meta/handshake","successful":true') > -1) {
       data = JSON.parse(data);
       clientId = data[0].clientId;
@@ -75,12 +77,12 @@ process.on('message', function message(task) {
       process.send({
         type: 'connection'
       });
-      socket.last = Date.now();
       msgId++;
     } else if (data.indexOf('"channel":"/chat') > -1) {
+      data = JSON.parse(data);
       process.send({
-        type: 'message', latency: Date.now() - socket.last, concurrent: concurrent,
-        id: task.id
+        type: 'message', latency: Date.now(), concurrent: concurrent,
+        id: task.id, message: data[0].data.text
       });
     } else if (data === '[]') {
     } else if (data.indexOf('"advice":{"reconnect":"retry"') > -1) {
@@ -106,8 +108,7 @@ process.on('message', function message(task) {
   });
 
   socket.on('error', function error(err) {
-    console.log("error");
-    console.log(err.message);
+    console.log("error: " + err.message);
     process.send({ type: 'error', message: err.message, id: task.id, concurrent: --concurrent });
 
     socket.close();
