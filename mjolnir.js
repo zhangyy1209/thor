@@ -48,7 +48,6 @@ process.on('message', function message(task) {
   });
 
   socket.on('open', function open() {
-    console.log("opned...");
     process.send({ type: 'open', duration: Date.now() - now, id: task.id, concurrent: concurrent });
     socket.send('{"channel":"/meta/handshake","version":"1.0","supportedConnectionTypes":["websocket","long-polling"],"id":"1"}'.toString('utf-8'));
     // write(socket, task, task.id);
@@ -81,7 +80,6 @@ process.on('message', function message(task) {
       msgId++;
     } else if (data.indexOf('"channel":"/chat') > -1) {
       data = JSON.parse(data);
-      // console.log(Date.now() - time_first);
       process.send({
         type: 'message', latency: Date.now(), concurrent: concurrent,
         id: task.id, message: data[0].data.text

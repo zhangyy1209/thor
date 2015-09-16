@@ -45,6 +45,11 @@ Metrics.prototype.start = function start() {
   return this;
 };
 
+Metrics.prototype.sendtime = function send(data) {
+  this.timing.send = Date.now();
+  return this;
+}
+
 /**
  * The metrics has stopped collecting.
  *
@@ -156,9 +161,9 @@ Metrics.prototype.summary = function summary() {
     , hrange = handshaking.range();
 
   var latencyNew = new Stats();
-  var latencyMin = latency.min;
+  // var latencyMin = latency.min;
   for(var i=0; i<latency.data.length; i++) {
-    latencyNew.push(latency.data[i] - latencyMin);
+    latencyNew.push(latency.data[i] - this.timing.send);
   }
   
   var lrange = latencyNew.range();
@@ -275,7 +280,9 @@ Metrics.prototype.summary = function summary() {
 
   msg += ['Received', this.received, 'Message: ' + this.data].join("\t") + "\n\n";
 
-  fs.appendFile('out.txt', msg, function(err) {
+  var filename = ['out', this.received, this.data.length].join('_') + '.txt';
+
+  fs.appendFile(filename, msg, function(err) {
     console.log(err);
   });
 

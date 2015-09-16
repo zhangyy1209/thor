@@ -40,6 +40,7 @@ var faye = require('faye');
 var client = new faye.Client('http://push.appfolio.us/faye');
 
 var publish = function(message) {
+  metrics.sendtime();
   client.publish('/chat', {text: message});
 }
 
@@ -54,7 +55,13 @@ var cluster = require('cluster')
   , received = 0
   , connected = 0
   , closed = 0
-  , robin = [];
+  , robin = []
+  , sendMessage = '';
+
+var count = 0;
+var strLenIndex = 0;
+var strLen = [11, 51, 101, 201, 501, 1001, 2001, 5001];
+var sendMessage = Array(strLen[strLenIndex]).join("b");
 
 cluster.setupMaster({
     exec: path.resolve(__dirname, '../mjolnir.js')
@@ -106,24 +113,30 @@ Object.keys(cluster.workers).forEach(function each(id) {
       case 'connection':
         connected++;
         if(connected === cli.amount) {
-          publish("test");
+          publish(sendMessage);
         }
 
         break;
 
       case 'message':
-        if(received + closed === connections-1) {
-          received++;
-          metrics.message(data);
-          metrics.established().stop().summary();
-          metrics = new Metrics();
-          received = 0;
-          publish("test");
-
-        }
-
         received++;
         metrics.message(data);
+        if(received + closed === connections) {
+          count++;
+          console.log("Count: " + count);
+          metrics.established().stop().summary();
+          received = 0;
+          if(count === 20) {
+            if(strLenIndex === strLen.length) {
+              process.exit();
+            }
+            strLenIndex++;
+            sendMessage = Array(strLen[strLenIndex]).join("b");
+            count = 0;
+          }
+          metrics = new Metrics();
+          publish(sendMessage);
+        }
     }
 
     //
@@ -263,5 +276,5 @@ process.once('SIGINT', function end() {
 
 process.once('exit', function summary() {
   live.stop();
-  metrics.established().stop().summary();
+  metrics.stop();
 });
